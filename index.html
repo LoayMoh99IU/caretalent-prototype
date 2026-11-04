@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CareTalent AI Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0}
+/* Layout: app shell in CareTalent's own light theme. Sticky header with tabs; each tab is one working view of an employer's hiring spend. Single light theme, matching the live product. */
+:root {
+  color-scheme: light;
+  --bg: #f4f6fa;
+  --card: #ffffff;
+  --muted-bg: #eceff7;
+  --fg: #0e1225;
+  --muted: #566275;
+  --faint: #8790a3;
+  --border: #dee2ed;
+  --input: #c8cedd;
+  --primary: #364ae2;
+  --primary-fg: #ffffff;
+  --teal: #00b3a4;
+  --accent: #def7f5;
+  --accent-fg: #005c54;
+  --good: #1a7a43; --good-bg: #e2f4e9;
+  --warn: #8f5600; --warn-bg: #fcefd8;
+  --bad: #b8322a;  --bad-bg: #fbe4e2;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300;
+  --radius: 12px;
+  --radius-card: 20px;
+  --f-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-sans); font-size: 15px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--card); }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: rgba(248, 249, 252, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 8px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
+.brand .ai { color: var(--primary); }
+.mark { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--teal), var(--primary)); display: grid; place-items: center; }
+.mark svg { width: 16px; height: 16px; }
+.employer { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; flex-wrap: wrap; }
+.employer b { color: var(--fg); font-weight: 600; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--muted-bg); color: var(--muted); white-space: nowrap; }
+.pill.live { background: var(--accent); color: var(--accent-fg); }
+.pill.live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+.pill.local { background: var(--warn-bg); color: var(--warn); }
+.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { appearance: none; border: 0; background: none; color: var(--muted); font: 500 14px var(--f-sans); padding: 10px 12px; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+.tab:hover { color: var(--fg); }
+.tab[aria-selected="true"] { color: var(--fg); font-weight: 600; border-bottom-color: var(--primary); }
+.tab:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+main { padding-block: 26px 48px; }
+.view-head { display: grid; gap: 4px; margin-bottom: 18px; }
+.rule { width: 44px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--teal), var(--primary)); margin-bottom: 8px; }
+h1 { font-weight: 700; font-size: clamp(22px, 3vw, 30px); letter-spacing: -0.025em; line-height: 1.15; margin: 0; text-wrap: balance; }
+h2 { font-weight: 600; font-size: 17px; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { color: var(--muted); margin: 4px 0 0; max-width: 66ch; }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 20px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.stack { display: grid; gap: 16px; min-width: 0; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.grid-side { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .grid-side { grid-template-columns: minmax(0, 1fr); } }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius-card); overflow: hidden; }
+.kpi { background: var(--card); padding: 14px 18px; min-width: 0; }
+.kpi .label { font-size: 12px; color: var(--muted); font-weight: 500; }
+.kpi .value { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 500; margin-top: 4px; letter-spacing: -0.02em; }
+.kpi .note { font-size: 12px; color: var(--faint); margin-top: 2px; }
+
+label.field { display: grid; gap: 5px; font-size: 13px; font-weight: 500; color: var(--muted); }
+input[type="text"], input[type="number"], select { font: 400 14px var(--f-sans); color: var(--fg); background: var(--card); border: 1px solid var(--input); border-radius: var(--radius); padding: 9px 12px; width: 100%; min-width: 0; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+.filters label.field { min-width: 150px; flex: 1 1 150px; }
+.checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 13px; color: var(--fg); }
+.checks label { display: flex; gap: 7px; align-items: center; }
+.btn { appearance: none; border: 1px solid var(--primary); background: var(--primary); color: var(--primary-fg); font: 600 14px var(--f-sans); padding: 10px 18px; border-radius: 999px; cursor: pointer; }
+.btn:hover { filter: brightness(1.08); }
+.btn.ghost { background: var(--card); color: var(--fg); border-color: var(--border); }
+.btn.ghost:hover { background: var(--muted-bg); filter: none; }
+.btn.small { padding: 7px 14px; font-size: 13px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.table-wrap { overflow-x: auto; margin-inline: -4px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: right; font-weight: 500; color: var(--muted); font-size: 12px; padding: 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { text-align: right; padding: 9px 8px; border-bottom: 1px solid var(--border); font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; font-family: var(--f-sans); }
+tbody tr:last-child td { border-bottom: 0; }
+tfoot td { font-weight: 600; border-top: 1px solid var(--border); border-bottom: 0; }
+.swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; }
+
+.chip { display: inline-flex; align-items: center; gap: 5px; font: 600 12px var(--f-sans); padding: 2px 9px; border-radius: 999px; }
+.chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.chip.good { color: var(--good); background: var(--good-bg); }
+.chip.warn { color: var(--warn); background: var(--warn-bg); }
+.chip.bad { color: var(--bad); background: var(--bad-bg); }
+.chip.info { color: var(--accent-fg); background: var(--accent); }
+
+.campaign { display: grid; gap: 14px; }
+.camp-meta { display: flex; gap: 6px 16px; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
+.camp-meta b { color: var(--fg); font-weight: 600; }
+.alloc { display: grid; gap: 10px; }
+.alloc-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.bar-stack { display: flex; gap: 2px; height: 22px; border-radius: 6px; overflow: hidden; }
+.bar-stack div { height: 100%; min-width: 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.callout { background: var(--accent); color: var(--accent-fg); border-radius: var(--radius); padding: 12px 14px; font-size: 14px; }
+.callout b { font-family: var(--f-mono); font-weight: 500; }
+.banner { border-radius: var(--radius); padding: 10px 14px; font-size: 13px; background: var(--warn-bg); color: var(--warn); }
+.empty { color: var(--muted); font-size: 14px; padding: 6px 0; }
+
+.feed { display: grid; gap: 0; max-height: 360px; overflow-y: auto; }
+.feed-item { display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.feed-item:last-child { border-bottom: 0; }
+.feed-item .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; }
+.feed-item .meta { color: var(--faint); font-size: 12px; }
+.feed-item.hire { font-weight: 600; }
+@keyframes flash { from { background: var(--accent); } to { background: transparent; } }
+@media (prefers-reduced-motion: no-preference) { .feed-item.new { animation: flash 1.6s ease-out; } .fill, .bar-stack div { transition: width .35s ease, flex-basis .35s ease; } }
+
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart .axis text { fill: var(--faint); font: 11px var(--f-mono); }
+.chart .grid line { stroke: var(--border); stroke-width: 1; }
+.chart .mark-bar { fill: var(--primary); }
+.chart g[data-tip]:hover .mark-bar { fill: var(--accent-fg); }
+
+.hbars { display: grid; gap: 8px; }
+.hbar { display: grid; grid-template-columns: 130px minmax(0, 1fr) 82px; gap: 10px; align-items: center; font-size: 13px; }
+.hbar .track { height: 14px; background: var(--muted-bg); border-radius: 0 4px 4px 0; }
+.hbar .fill { height: 100%; background: var(--primary); border-radius: 0 4px 4px 0; }
+.hbar .v { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .hbar { grid-template-columns: 96px minmax(0, 1fr) 70px; } }
+
+.funnel { display: grid; }
+.fstep { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr) 90px 90px; gap: 12px; align-items: center; font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.fstep:last-child { border-bottom: 0; }
+.fstep .name { font-weight: 600; }
+.fstep .name small { display: block; color: var(--faint); font-weight: 400; font-size: 12px; }
+.fstep .count, .fstep .cost { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.fstep .cost { color: var(--muted); }
+.fhead { font-size: 12px; color: var(--muted); font-weight: 500; }
+.fhead > div:nth-child(n+3) { text-align: right; }
+@media (max-width: 560px) { .fstep { grid-template-columns: minmax(0, 1fr) 70px 80px; } .fstep .barcell { display: none; } }
+
+.variant { display: grid; gap: 12px; }
+.posting { border: 1px dashed var(--input); border-radius: var(--radius); padding: 12px 14px; background: var(--bg); }
+.posting .t { font-weight: 600; font-size: 16px; }
+.posting p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.vstats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.verdict { border-radius: var(--radius-card); padding: 18px 20px; display: grid; gap: 6px; }
+.verdict.win { background: var(--good-bg); }
+.verdict.wait { background: var(--warn-bg); }
+.verdict .big { font-weight: 700; font-size: 20px; letter-spacing: -0.015em; }
+
+.tip { position: fixed; z-index: 20; pointer-events: none; background: var(--fg); color: #fff; font-size: 12px; padding: 6px 9px; border-radius: 8px; max-width: 240px; line-height: 1.4; }
+.tip b { font-family: var(--f-mono); font-weight: 500; }
+footer { color: var(--faint); font-size: 12px; padding-block: 0 32px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand"><span class="mark" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><circle cx="8" cy="4.6" r="1.9" fill="#fff" stroke="none"/><path d="M3.5 8.5c1.6 1.2 3 1.6 4.5 1.6s2.9-.4 4.5-1.6M8 10.2v3.6"/></svg></span><span>CareTalent <span class="ai">AI</span></span></div>
+      <div class="employer">For employers · <b>Riverside Health System</b> <span class="pill">Sample data</span> <span class="pill" id="mode-pill">Connecting…</span></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" data-view="ads" id="tab-ads">Smart job ads</button>
+      <button class="tab" role="tab" data-view="dashboard" id="tab-dashboard">Hiring dashboard</button>
+      <button class="tab" role="tab" data-view="abtest" id="tab-abtest">A/B test</button>
+      <button class="tab" role="tab" data-view="roi" id="tab-roi">Ad spend ROI</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="view-ads" hidden>
+    <div class="view-head">
+      <div class="rule"></div>
+      <h1>Post once, spend where the hires come from</h1>
+      <p class="sub">One job goes out to every board. Each day we count who applied, who is qualified, and who got hired, then move budget toward the boards that send clinicians, not just clicks.</p>
+    </div>
+    <div class="grid-side">
+      <div class="stack">
+        <form class="panel stack" id="post-form" autocomplete="off">
+          <h2>Post a new job</h2>
+          <label class="field">Job title<input type="text" id="pf-title" value="Med/Surg RN · Days · Sign-on bonus" required></label>
+          <label class="field">Role<select id="pf-type"></select></label>
+          <label class="field">Location<input type="text" id="pf-loc" value="Indianapolis, IN"></label>
+          <label class="field">Monthly ad budget (USD)<input type="number" id="pf-budget" min="500" step="500" value="6000"></label>
+          <div style="display:grid;gap:6px"><span style="font-size:13px;font-weight:500;color:var(--muted)">Job boards</span><div class="checks" id="pf-boards"></div></div>
+          <button class="btn" type="submit" id="pf-submit">Post to 6 boards</button>
+          <p class="empty" id="pf-msg" hidden></p>
+        </form>
+        <div class="panel">
+          <div class="panel-head"><h2>Live activity</h2><span class="eyebrow">all jobs</span></div>
+          <div class="feed" id="feed"><p class="empty">Activity from your jobs shows up here.</p></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="banner" id="mode-banner" hidden></div>
+        <div class="stack" id="campaigns"><div class="panel"><p class="empty">Loading your jobs…</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-dashboard" hidden>
+    <div class="view-head">
+      <div class="rule"></div>
+      <h1>Hiring dashboard</h1>
+      <p class="sub">What you spent, who applied, who you hired, and who is still with you a year later.</p>
+    </div>
+    <div class="stack">
+      <div class="filters panel" style="padding:14px 18px">
+        <label class="field">Job board<select id="f-board"></select></label>
+        <label class="field">Role<select id="f-type"></select></label>
+        <label class="field">Period<select id="f-range">
+          <option value="3">Last 3 months</option>
+          <option value="6">Last 6 months</option>
+          <option value="12" selected>Last 12 months</option>
+          <option value="18">Last 18 months</option>
+        </select></label>
+      </div>
+      <div class="kpis" id="d-kpis"></div>
+      <div class="grid-2">
+        <div class="panel chart"><div class="panel-head"><h2>Ad spend by month</h2><span class="eyebrow">USD</span></div><div id="d-spend"></div></div>
+        <div class="panel chart"><div class="panel-head"><h2>Hires by month</h2><span class="eyebrow">clinicians</span></div><div id="d-hires"></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Results by job board</h2><span class="eyebrow">signal compares cost per hire with the average</span></div>
+        <div class="table-wrap"><table id="d-table"></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Results by role</h2></div>
+        <div class="table-wrap"><table id="d-type-table"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-abtest" hidden>
+    <div class="view-head">
+      <div class="rule"></div>
+      <h1>Which version of the post works better?</h1>
+      <p class="sub">Two versions of the same ICU RN job ran side by side on the same boards. Edit the counts to see how the answer changes.</p>
+    </div>
+    <div class="stack">
+      <div class="grid-2" id="ab-variants"></div>
+      <div id="ab-verdict"></div>
+    </div>
+  </section>
+
+  <section id="view-roi" hidden>
+    <div class="view-head">
+      <div class="rule"></div>
+      <h1>What each job-ad dollar bought</h1>
+      <p class="sub">For finance: every stage from the first click to a hire who stayed a full year. Uses hire cohorts from May to October 2025, the newest ones with complete 365-day results.</p>
+    </div>
+    <div class="stack">
+      <div class="kpis" id="r-kpis"></div>
+      <div class="panel">
+        <div class="panel-head"><h2>From first click to a hire who stayed</h2><span class="eyebrow">all boards, all roles</span></div>
+        <div class="funnel" id="r-funnel"></div>
+      </div>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><h2>Cost per hire retained 365 days</h2><span class="eyebrow">lower is better</span></div>
+          <div class="hbars" id="r-boards"></div>
+        </div>
+        <div class="panel stack">
+          <h2>Compared with agency hiring</h2>
+          <label class="field">Your average agency cost per placed clinician (USD)<input type="number" id="r-agency" min="0" step="1000" value="25000"></label>
+          <p class="sub" style="margin:0;font-size:13px">This is an assumption. Change it to match your agency contracts.</p>
+          <div class="callout" id="r-agency-out"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap row" style="justify-content:space-between">Prototype for CareTalent AI with sample data. Prepared by Loay Mahmoud.<button class="btn small ghost" id="reset-demo" type="button">Reset demo</button></footer>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+// ---------- seeded random ----------
+function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const R = rng(20261103);
+const jit = (a, b) => a + (b - a) * R();
+
+// ---------- reference data ----------
+// cpc: cost per click; apply: click->apply; qual: apply->qualified; hire: qualified->hire; ret: hire->365 day retention
+const BOARDS = [
+  { id: "indeed",   name: "Indeed",            cpc: 0.95, apply: 0.025, qual: 0.32, hire: 0.07,  ret: 0.76, share: 0.24, color: "var(--s1)" },
+  { id: "linkedin", name: "LinkedIn",          cpc: 2.30, apply: 0.028, qual: 0.50, hire: 0.08,  ret: 0.83, share: 0.16, color: "var(--s2)" },
+  { id: "vivian",   name: "Vivian Health",     cpc: 1.70, apply: 0.040, qual: 0.58, hire: 0.10,  ret: 0.85, share: 0.14, color: "var(--s3)" },
+  { id: "incred",   name: "Incredible Health", cpc: 2.90, apply: 0.055, qual: 0.70, hire: 0.11,  ret: 0.88, share: 0.12, color: "var(--s4)" },
+  { id: "nursecom", name: "Nurse.com",         cpc: 1.40, apply: 0.032, qual: 0.45, hire: 0.08,  ret: 0.80, share: 0.12, color: "var(--s5)" },
+  { id: "zip",      name: "ZipRecruiter",      cpc: 0.60, apply: 0.020, qual: 0.15, hire: 0.045, ret: 0.68, share: 0.22, color: "var(--s6)" },
+];
+const TYPES = [
+  { id: "icu", name: "ICU RN",              share: 0.26, k: 0.9 },
+  { id: "ed",  name: "ED RN",               share: 0.20, k: 0.95 },
+  { id: "ms",  name: "Med/Surg RN",         share: 0.24, k: 1.2 },
+  { id: "np",  name: "Nurse Practitioner",  share: 0.12, k: 0.85 },
+  { id: "pa",  name: "Physician Assistant", share: 0.08, k: 0.8 },
+  { id: "crna",name: "CRNA",                share: 0.10, k: 0.55 },
+];
+const MONTHS = [];
+for (let i = 0; i < 18; i++) { const d = new Date(2025, 4 + i, 1); MONTHS.push({ i, label: d.toLocaleString("en-US", { month: "short" }) + " " + String(d.getFullYear()).slice(2), full: d.toLocaleString("en-US", { month: "long", year: "numeric" }), mature: i <= 5 }); }
+
+const RECORDS = [];
+MONTHS.forEach(m => {
+  const season = jit(0.88, 1.14);
+  BOARDS.forEach(b => TYPES.forEach(t => {
+    const spend = 60000 * b.share * t.share * season * jit(0.85, 1.15);
+    const clicks = spend / (b.cpc * jit(0.9, 1.1));
+    const applies = clicks * b.apply * jit(0.85, 1.15);
+    const qualified = applies * b.qual * jit(0.85, 1.15);
+    const interviews = qualified * 0.42 * jit(0.9, 1.1);
+    const hires = qualified * b.hire * t.k * jit(0.8, 1.2);
+    const ret90 = hires * Math.min(0.97, b.ret + 0.1);
+    const ret365 = m.mature ? hires * Math.min(0.95, b.ret * jit(0.94, 1.04)) : null;
+    RECORDS.push({ m: m.i, board: b.id, type: t.id, spend, clicks, applies, qualified, interviews, hires, ret90, ret365 });
+  }));
+});
+
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtUSD = v => "$" + Math.round(v).toLocaleString("en-US");
+const fmtK = v => v >= 1000 ? "$" + (v / 1000).toFixed(v >= 10000 ? 0 : 1) + "K" : "$" + Math.round(v);
+const fmtN = v => Math.round(v).toLocaleString("en-US");
+const pct = (v, d = 0) => (v * 100).toFixed(d) + "%";
+const boardById = id => BOARDS.find(b => b.id === id);
+const typeById = id => TYPES.find(t => t.id === id) || TYPES[0];
+function sum(rows) {
+  const s = { spend: 0, clicks: 0, applies: 0, qualified: 0, interviews: 0, hires: 0, ret90: 0, ret365: 0, matureHires: 0 };
+  rows.forEach(r => { for (const k of ["spend", "clicks", "applies", "qualified", "interviews", "hires", "ret90"]) s[k] += r[k]; if (r.ret365 != null) { s.ret365 += r.ret365; s.matureHires += r.hires; } });
+  return s;
+}
+function niceTicks(max, n = 4) {
+  const raw = max / n, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10) * mag;
+  const top = Math.ceil(max / step) * step; const t = []; for (let v = 0; v <= top + 1e-9; v += step) t.push(v); return t;
+}
+function barChart(el, labels, values, fmt, tipFmt) {
+  const W = 560, H = 220, L = 46, B = 26, T = 8, Rr = 4;
+  const ticks = niceTicks(Math.max(...values, 1)), top = ticks[ticks.length - 1];
+  const pw = W - L - Rr, ph = H - T - B, bw = pw / values.length, w = Math.max(3, Math.min(22, bw * 0.6));
+  const y = v => T + ph - (v / top) * ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bar chart"><g class="grid">`;
+  ticks.forEach(t => s += `<line x1="${L}" x2="${W - Rr}" y1="${y(t)}" y2="${y(t)}"/>`);
+  s += `</g><g class="axis">`;
+  ticks.forEach(t => s += `<text x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${fmt(t)}</text>`);
+  const every = values.length > 12 ? 3 : values.length > 6 ? 2 : 1;
+  labels.forEach((lab, i) => { if (i % every === 0 || i === labels.length - 1) s += `<text x="${L + bw * i + bw / 2}" y="${H - 6}" text-anchor="middle">${lab}</text>`; });
+  s += `</g>`;
+  values.forEach((v, i) => {
+    const x = L + bw * i + (bw - w) / 2, yy = y(v), h = Math.max(0, T + ph - yy), r = Math.min(4, h, w / 2);
+    const d = h <= 0 ? "" : `M${x},${T + ph} V${yy + r} Q${x},${yy} ${x + r},${yy} H${x + w - r} Q${x + w},${yy} ${x + w},${yy + r} V${T + ph} Z`;
+    s += `<g data-tip="${tipFmt(i)}"><rect x="${L + bw * i}" y="${T}" width="${bw}" height="${ph}" fill="transparent"/><path class="mark-bar" d="${d}"/></g>`;
+  });
+  el.innerHTML = s + `</svg>`;
+}
+function chipFor(ratio) { return ratio <= 0.75 ? '<span class="chip good">Scale up</span>' : ratio >= 1.5 ? '<span class="chip bad">Cut back</span>' : '<span class="chip warn">Hold</span>'; }
+
+// ---------- tooltip ----------
+const tip = $("#tip");
+document.addEventListener("pointermove", e => {
+  const g = e.target.closest && e.target.closest("[data-tip]");
+  if (!g) { tip.hidden = true; return; }
+  tip.innerHTML = g.getAttribute("data-tip"); tip.hidden = false;
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY - r.height - 10;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y < 8) y = e.clientY + 16;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+});
+document.addEventListener("pointerleave", () => tip.hidden = true);
+
+// =====================================================================
+// SMART JOB ADS: campaigns live in the artifact's shared database
+// ("campaigns" collection). Each "day" adds that day's spend, clicks,
+// applicants, qualified applicants and hires per board, plus feed events.
+// =====================================================================
+let db = null, canWrite = null, mode = "loading", campaigns = [], seenFeed = new Set(), firstFeedRender = true;
+const busy = new Set();
+
+function emptyStats(boards) { const s = {}; boards.forEach(id => s[id] = { spend: 0, clicks: 0, applies: 0, qualified: 0, hires: 0 }); return s; }
+function newCampaign({ title, type, location, budget, boards }) {
+  const sel = BOARDS.filter(b => boards.includes(b.id)), tot = sel.reduce((a, b) => a + b.share, 0), alloc = {};
+  sel.forEach(b => alloc[b.id] = +(b.share / tot).toFixed(4));
+  return { title, type, location, budget, boards, alloc, stats: emptyStats(boards), days: 0, rebalanced: false, feed: [], createdAt: Date.now(), seed: Math.floor(Math.random() * 1e9) };
+}
+// advance a campaign by n days; returns a new body
+function advance(c0, n) {
+  const c = JSON.parse(JSON.stringify(c0)); const t = typeById(c.type);
+  for (let d = 0; d < n; d++) {
+    c.days += 1; const r = rng(c.seed + c.days * 7919);
+    const dayItems = [];
+    c.boards.forEach(id => {
+      const b = boardById(id), s = c.stats[id], a = c.alloc[id] || 0;
+      const before = { applies: Math.floor(s.applies), qualified: Math.floor(s.qualified), hires: Math.floor(s.hires) };
+      const spend = c.budget * a / 30 * (0.85 + r() * 0.3);
+      const clicks = spend / (b.cpc * (0.9 + r() * 0.2));
+      const applies = clicks * b.apply * (0.7 + r() * 0.6);
+      const qualified = applies * b.qual * (0.7 + r() * 0.6);
+      const ramp = Math.min(1, c.days / 10);
+      const hires = qualified * b.hire * t.k * 2.2 * ramp * (0.6 + r() * 0.8);
+      s.spend += spend; s.clicks += clicks; s.applies += applies; s.qualified += qualified; s.hires += hires;
+      const na = Math.floor(s.applies) - before.applies, nq = Math.floor(s.qualified) - before.qualified, nh = Math.floor(s.hires) - before.hires;
+      if (na > 0) dayItems.push({ id: c.days + "-" + id + "-a", day: c.days, board: id, kind: "apply", text: `${na} new applicant${na > 1 ? "s" : ""} via ${b.name}${nq > 0 ? `, ${nq} qualified` : ""}` });
+      for (let h = 0; h < nh; h++) dayItems.push({ id: c.days + "-" + id + "-h" + h, day: c.days, board: id, kind: "hire", text: `Offer accepted: ${t.name} candidate #${1000 + Math.floor(r() * 9000)} via ${b.name}` });
+    });
+    c.feed = dayItems.reverse().concat(c.feed).slice(0, 30);
+  }
+  c.updatedAt = Date.now();
+  return c;
+}
+function recommend(c) {
+  const ids = c.boards.filter(id => c.stats[id]);
+  const qpd = ids.map(id => c.stats[id].spend > 0 ? c.stats[id].qualified / c.stats[id].spend : 0);
+  const w = qpd.map(q => Math.pow(q, 1.5)), tot = w.reduce((a, b) => a + b, 0) || 1;
+  let al = w.map(x => Math.max(0.04, x / tot)); const t2 = al.reduce((a, b) => a + b, 0); al = al.map(a => +(a / t2).toFixed(4));
+  const out = {}; ids.forEach((id, i) => out[id] = al[i]); return { alloc: out, qpd: Object.fromEntries(ids.map((id, i) => [id, qpd[i]])) };
+}
+
+// ----- storage layer -----
+function setMode(m, note) {
+  mode = m;
+  const pill = $("#mode-pill"), banner = $("#mode-banner");
+  if (m === "shared") { pill.className = "pill live"; pill.textContent = "Live · saved"; banner.hidden = true; }
+  else { pill.className = "pill local"; pill.textContent = "Demo mode"; banner.hidden = false; banner.textContent = note; }
+}
+function goLocal(note) {
+  if (mode === "local") return;
+  if (!campaigns.length) {
+    const a = newCampaign({ title: "ICU RN · Nights · $15K sign-on", type: "icu", location: "Indianapolis, IN", budget: 9000, boards: BOARDS.map(b => b.id) }); a.seed = 11; a.id = "local-icu";
+    const b = newCampaign({ title: "CRNA · Main OR · Full-time", type: "crna", location: "Carmel, IN", budget: 7000, boards: BOARDS.map(b => b.id) }); b.seed = 29; b.id = "local-crna"; b.createdAt -= 1;
+    campaigns = [advance(a, 21), advance(b, 14)].map((x, i) => ({ ...x, id: i ? "local-crna" : "local-icu" }));
+  }
+  setMode("local", note);
+  renderCampaigns(); renderFeed();
+}
+async function save(c) {
+  // c has an id; body is everything else
+  const { id, ...body } = c;
+  if (mode === "shared" && canWrite === false) goLocal("You're viewing the shared demo. Your edits stay in this tab.");
+  if (mode === "shared") {
+    try { await db.collection("campaigns").doc(id).set(body); return; }
+    catch (e) {
+      if (e && (e.code === "invalid_argument" || e.code === "not_granted" || e.code === "revoked")) {
+        canWrite = false;
+        goLocal("You can view the shared demo, but your account can't change it. Your edits stay in this tab.");
+      } else if (e && e.code === "quota_exceeded") {
+        goLocal("The demo database is full. Your edits stay in this tab.");
+      } else { throw e; }
+    }
+  }
+  const i = campaigns.findIndex(x => x.id === id);
+  if (i >= 0) campaigns[i] = c; else campaigns.unshift(c);
+  try { localStorage.setItem(LS_KEY, JSON.stringify(campaigns)); } catch (e) {}
+  renderCampaigns(); renderFeed();
+}
+async function initDb() {
+  const timer = setTimeout(() => { if (mode === "loading") goLocal("The shared database didn't answer, so this is a local demo. Changes stay in this tab."); }, 10000);
+  try { db = window.claude?.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+  if (!db) { clearTimeout(timer); goLocal("Open this page signed in to claude.ai to save changes. For now, changes stay in this tab."); return; }
+  try { const user = await window.claude.use("user"); canWrite = user ? await user.can("data.write") : null; } catch (e) { canWrite = null; }
+  db.collection("campaigns").orderBy("createdAt", "desc").onSnapshot(snap => {
+    if (mode === "local") return;
+    if (!snap.metadata.fromCache) clearTimeout(timer);
+    setMode("shared");
+    if (canWrite === false) { $("#mode-banner").hidden = false; $("#mode-banner").textContent = "You're viewing the shared demo. Your edits will stay in this tab."; }
+    campaigns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderCampaigns(); renderFeed();
+  }, () => { clearTimeout(timer); goLocal("The shared database stopped answering. Changes now stay in this tab."); });
+}
+
+// ----- rendering -----
+function totals(c) { return c.boards.reduce((a, id) => { const s = c.stats[id] || {}; for (const k of ["spend", "clicks", "applies", "qualified", "hires"]) a[k] += s[k] || 0; return a; }, { spend: 0, clicks: 0, applies: 0, qualified: 0, hires: 0 }); }
+function renderCampaigns() {
+  const host = $("#campaigns");
+  if (!campaigns.length) { host.innerHTML = `<div class="panel"><h2>No jobs posted yet</h2><p class="empty">Post your first job on the left. It goes to every board you pick, and results appear here day by day.</p></div>`; return; }
+  host.innerHTML = campaigns.map(c => {
+    const tot = totals(c), typeName = typeById(c.type).name, isBusy = busy.has(c.id);
+    const status = c.days === 0 ? '<span class="chip warn">Posted, waiting for data</span>' : c.rebalanced ? '<span class="chip info">Rebalanced</span>' : '<span class="chip good">Live</span>';
+    const dayBtns = `<div class="row"><button class="btn small ghost" data-act="day" data-n="1" data-id="${esc(c.id)}" ${isBusy ? "disabled" : ""}>Advance 1 day</button><button class="btn small ghost" data-act="day" data-n="7" data-id="${esc(c.id)}" ${isBusy ? "disabled" : ""}>Advance 7 days</button></div>`;
+    let body;
+    if (c.days === 0) {
+      body = `<p class="empty">Live on ${c.boards.length} boards. Results appear here as candidates click and apply.</p>${dayBtns}`;
+    } else {
+      const ids = c.boards;
+      const cpq = id => c.stats[id].spend / Math.max(c.stats[id].qualified, 0.01);
+      const sorted = ids.map(cpq).sort((a, b) => a - b), med = sorted[Math.floor(sorted.length / 2)];
+      const rows = ids.map(id => { const b = boardById(id), s = c.stats[id]; return `<tr><td><span class="swatch" style="background:${b.color}"></span>${b.name}</td><td>${fmtUSD(s.spend)}</td><td>${fmtN(s.clicks)}</td><td>${fmtN(Math.floor(s.applies))}</td><td>${fmtN(Math.floor(s.qualified))}</td><td>${fmtN(Math.floor(s.hires))}</td><td>${fmtUSD(cpq(id))}</td><td style="text-align:left">${c.days >= 3 ? chipFor(cpq(id) / med) : '<span class="chip info">Learning</span>'}</td></tr>`; }).join("");
+      const rec = recommend(c);
+      const cur = id => c.alloc[id] || 0;
+      const projCur = ids.reduce((a, id) => a + c.budget * cur(id) * rec.qpd[id], 0);
+      const projRec = ids.reduce((a, id) => a + c.budget * rec.alloc[id] * rec.qpd[id], 0);
+      const seg = get => ids.map(id => `<div style="flex:0 0 calc(${(get(id) * 100).toFixed(2)}% - 2px);background:${boardById(id).color}" data-tip="${boardById(id).name}: <b>${pct(get(id))}</b> · ${fmtUSD(c.budget * get(id))}/mo"></div>`).join("");
+      const same = ids.every(id => Math.abs(cur(id) - rec.alloc[id]) < 0.01);
+      const learning = c.days < 3;
+      body = `
+        <div class="table-wrap"><table>
+          <thead><tr><th>Board</th><th>Spend</th><th>Clicks</th><th>Applicants</th><th>Qualified</th><th>Hires</th><th>Cost / qualified</th><th style="text-align:left">Signal</th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot><tr><td>Total</td><td>${fmtUSD(tot.spend)}</td><td>${fmtN(tot.clicks)}</td><td>${fmtN(Math.floor(tot.applies))}</td><td>${fmtN(Math.floor(tot.qualified))}</td><td>${fmtN(Math.floor(tot.hires))}</td><td>${fmtUSD(tot.spend / Math.max(tot.qualified, 0.01))}</td><td></td></tr></tfoot>
+        </table></div>
+        <div class="alloc">
+          <div class="alloc-row"><span>${c.rebalanced ? "Now" : "Current split"}</span><div class="bar-stack">${seg(cur)}</div></div>
+          ${same || learning ? "" : `<div class="alloc-row"><span>Recommended</span><div class="bar-stack">${seg(id => rec.alloc[id])}</div></div>`}
+          <div class="legend">${ids.map(id => `<span><span class="swatch" style="background:${boardById(id).color}"></span>${boardById(id).name}</span>`).join("")}</div>
+        </div>
+        ${learning ? `<div class="callout">Still learning which boards work. A budget recommendation appears after 3 days of results.</div>`
+          : same ? `<div class="callout">Budget is already weighted toward the boards that send qualified candidates. Projected <b>${fmtN(projCur)}</b> qualified applicants per month at ${fmtUSD(c.budget)}.</div>`
+          : `<div class="callout">Same ${fmtUSD(c.budget)} monthly budget, projected <b>${fmtN(projRec)}</b> qualified applicants per month instead of <b>${fmtN(projCur)}</b> (<b>+${pct(projRec / Math.max(projCur, 0.01) - 1)}</b>). Every board keeps at least 4% so we keep learning.</div>
+             <div class="row"><button class="btn small" data-act="apply" data-id="${esc(c.id)}" ${isBusy ? "disabled" : ""}>Move budget to recommended split</button></div>`}
+        ${dayBtns}`;
+    }
+    return `<article class="panel campaign">
+      <div class="panel-head" style="margin:0"><h2>${esc(c.title)}</h2>${status}</div>
+      <div class="camp-meta"><span>Role <b>${typeName}</b></span><span>Location <b>${esc(c.location)}</b></span><span>Budget <b>${fmtUSD(c.budget)}/mo</b></span><span>Live <b>${c.days} day${c.days === 1 ? "" : "s"}</b></span><span>Boards <b>${c.boards.length}</b></span></div>
+      ${body}</article>`;
+  }).join("");
+}
+function renderFeed() {
+  const items = campaigns.flatMap(c => (c.feed || []).map((f, i) => ({ ...f, key: c.id + ":" + f.id, job: c.title, order: (c.updatedAt || c.createdAt || 0) - i }))).sort((a, b) => b.order - a.order).slice(0, 40);
+  const host = $("#feed");
+  if (!items.length) { host.innerHTML = `<p class="empty">Activity from your jobs shows up here.</p>`; return; }
+  host.innerHTML = items.map(f => { const b = boardById(f.board) || BOARDS[0]; const isNew = !firstFeedRender && !seenFeed.has(f.key); return `<div class="feed-item ${f.kind === "hire" ? "hire" : ""} ${isNew ? "new" : ""}"><span class="dot" style="background:${f.kind === "hire" ? "var(--teal)" : b.color}"></span><div>${esc(f.text)}<div class="meta">Day ${f.day} · ${esc(f.job)}</div></div></div>`; }).join("");
+  items.forEach(f => seenFeed.add(f.key)); firstFeedRender = false;
+}
+$("#campaigns").addEventListener("click", async e => {
+  const btn = e.target.closest("button[data-act]"); if (!btn) return;
+  const c = campaigns.find(x => x.id === btn.dataset.id); if (!c || busy.has(c.id)) return;
+  let next;
+  if (btn.dataset.act === "day") next = { ...advance(c, +btn.dataset.n), id: c.id };
+  if (btn.dataset.act === "apply") { const rec = recommend(c); next = { ...JSON.parse(JSON.stringify(c)), alloc: { ...c.alloc, ...rec.alloc }, rebalanced: true, updatedAt: Date.now() }; }
+  busy.add(c.id); renderCampaigns();
+  try { await save(next); } catch (err) { const bn = $("#mode-banner"); bn.hidden = false; bn.textContent = "That change didn't save. Try again in a moment."; } finally { busy.delete(c.id); renderCampaigns(); }
+});
+// form
+$("#pf-type").innerHTML = TYPES.map(t => `<option value="${t.id}"${t.id === "ms" ? " selected" : ""}>${t.name}</option>`).join("");
+$("#pf-boards").innerHTML = BOARDS.map(b => `<label><input type="checkbox" id="pf-b-${b.id}" value="${b.id}" checked>${b.name}</label>`).join("");
+function syncPostBtn() { const n = document.querySelectorAll("#pf-boards input:checked").length; const btn = $("#pf-submit"); btn.textContent = n ? `Post to ${n} board${n > 1 ? "s" : ""}` : "Pick at least one board"; btn.disabled = !n; }
+$("#pf-boards").addEventListener("change", syncPostBtn);
+$("#post-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const boards = [...document.querySelectorAll("#pf-boards input:checked")].map(i => i.value);
+  if (!boards.length) return;
+  const c = newCampaign({ title: ($("#pf-title").value.trim() || "Untitled job").slice(0, 120), type: $("#pf-type").value, location: ($("#pf-loc").value.trim() || "Remote").slice(0, 80), budget: Math.min(500000, Math.max(500, +$("#pf-budget").value || 500)), boards });
+  c.id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const btn = $("#pf-submit"); btn.disabled = true; btn.textContent = "Posting…";
+  try { await save(c); const m = $("#pf-msg"); m.hidden = false; m.textContent = `Posted to ${boards.length} board${boards.length > 1 ? "s" : ""}.`; }
+  catch (err) { const m = $("#pf-msg"); m.hidden = false; m.textContent = "Couldn't post the job. Try again in a moment."; }
+  finally { syncPostBtn(); }
+});
+
+// ---------- DASHBOARD ----------
+$("#f-board").innerHTML = `<option value="all">All boards</option>` + BOARDS.map(b => `<option value="${b.id}">${b.name}</option>`).join("");
+$("#f-type").innerHTML = `<option value="all">All roles</option>` + TYPES.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+function renderDashboard() {
+  const fb = $("#f-board").value, ft = $("#f-type").value, n = +$("#f-range").value;
+  const months = MONTHS.slice(MONTHS.length - n);
+  const rows = RECORDS.filter(r => r.m >= months[0].i && (fb === "all" || r.board === fb) && (ft === "all" || r.type === ft));
+  const s = sum(rows);
+  $("#d-kpis").innerHTML = [
+    ["Ad spend", fmtUSD(s.spend), months[0].label + " – " + months[months.length - 1].label],
+    ["Applicants", fmtN(s.applies), fmtN(s.clicks) + " clicks"],
+    ["Qualified", fmtN(s.qualified), pct(s.qualified / s.applies) + " of applicants"],
+    ["Hires", fmtN(s.hires), fmtN(s.interviews) + " interviews"],
+    ["Cost per hire", fmtUSD(s.spend / Math.max(s.hires, 0.01)), "ad spend only"],
+    ["365-day retention", s.matureHires > 0 ? pct(s.ret365 / s.matureHires) : "Tracking", s.matureHires > 0 ? "hires from May–Oct 2025" : "first cohort completes a year soon"],
+  ].map(([l, v, nt]) => `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div><div class="note">${nt}</div></div>`).join("");
+  const per = months.map(m => sum(rows.filter(r => r.m === m.i)));
+  barChart($("#d-spend"), months.map(m => m.label), per.map(p => p.spend), fmtK, i => `${months[i].full}<br>Spend <b>${fmtUSD(per[i].spend)}</b>`);
+  barChart($("#d-hires"), months.map(m => m.label), per.map(p => p.hires), v => fmtN(v), i => `${months[i].full}<br>Hires <b>${fmtN(per[i].hires)}</b> · ${fmtUSD(per[i].spend / Math.max(per[i].hires, 0.01))} per hire`);
+  const brows = BOARDS.filter(b => fb === "all" || b.id === fb).map(b => ({ b, s: sum(rows.filter(r => r.board === b.id)) }));
+  const allCph = s.spend / Math.max(s.hires, 0.01);
+  $("#d-table").innerHTML = `<thead><tr><th>Board</th><th>Spend</th><th>Clicks</th><th>Applicants</th><th>Qualified</th><th>Hires</th><th>Cost / hire</th><th>365-day retention</th><th style="text-align:left">Signal</th></tr></thead><tbody>` +
+    brows.sort((a, z) => (a.s.spend / Math.max(a.s.hires, .01)) - (z.s.spend / Math.max(z.s.hires, .01))).map(({ b, s: x }) => { const cph = x.spend / Math.max(x.hires, 0.01); return `<tr><td><span class="swatch" style="background:${b.color}"></span>${b.name}</td><td>${fmtUSD(x.spend)}</td><td>${fmtN(x.clicks)}</td><td>${fmtN(x.applies)}</td><td>${fmtN(x.qualified)}</td><td>${fmtN(x.hires)}</td><td>${fmtUSD(cph)}</td><td>${x.matureHires ? pct(x.ret365 / x.matureHires) : "Tracking"}</td><td style="text-align:left">${fb === "all" ? chipFor(cph / allCph) : ""}</td></tr>`; }).join("") + `</tbody>`;
+  const trows = TYPES.filter(t => ft === "all" || t.id === ft).map(t => ({ t, s: sum(rows.filter(r => r.type === t.id)) }));
+  $("#d-type-table").innerHTML = `<thead><tr><th>Role</th><th>Spend</th><th>Applicants</th><th>Qualified</th><th>Hires</th><th>Cost / hire</th><th>365-day retention</th></tr></thead><tbody>` +
+    trows.map(({ t, s: x }) => `<tr><td>${t.name}</td><td>${fmtUSD(x.spend)}</td><td>${fmtN(x.applies)}</td><td>${fmtN(x.qualified)}</td><td>${fmtN(x.hires)}</td><td>${fmtUSD(x.spend / Math.max(x.hires, 0.01))}</td><td>${x.matureHires ? pct(x.ret365 / x.matureHires) : "Tracking"}</td></tr>`).join("") + `</tbody>`;
+}
+["#f-board", "#f-type", "#f-range"].forEach(id => $(id).addEventListener("change", renderDashboard));
+
+// ---------- A/B TEST ----------
+const AB = [
+  { key: "A", title: "Registered Nurse – ICU", body: "Full-time position in our Intensive Care Unit. BSN preferred. Competitive pay and benefits.", views: 4200, applies: 118, qualified: 41 },
+  { key: "B", title: "ICU RN · Nights · $15K sign-on bonus", body: "3x12 shifts, self-scheduling, 1:2 patient ratios. Pay range $46–$58/hr shown up front.", views: 4100, applies: 171, qualified: 77 },
+];
+function normCdf(z) { const t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2); const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - p : p; }
+function renderABInputs() {
+  $("#ab-variants").innerHTML = AB.map((v, i) => `
+    <div class="panel variant">
+      <div class="panel-head" style="margin:0"><h2>Version ${v.key}</h2><span class="eyebrow">same boards, same budget</span></div>
+      <div class="posting"><div class="t">${v.title}</div><p>${v.body}</p></div>
+      <div class="vstats">
+        <label class="field">People who saw it<input type="number" min="1" id="ab-views-${i}" value="${v.views}" data-i="${i}" data-k="views"></label>
+        <label class="field">Applied<input type="number" min="0" id="ab-applies-${i}" value="${v.applies}" data-i="${i}" data-k="applies"></label>
+      </div>
+      <div class="kpis" id="ab-k-${i}"></div>
+    </div>`).join("");
+  $("#ab-variants").addEventListener("input", e => { const el = e.target; if (!el.dataset.k) return; AB[+el.dataset.i][el.dataset.k] = Math.max(0, +el.value || 0); renderAB(); });
+}
+function renderAB() {
+  AB.forEach((v, i) => {
+    const ar = v.views ? v.applies / v.views : 0, q = Math.min(v.qualified, v.applies), qr = v.applies ? q / v.applies : 0;
+    $("#ab-k-" + i).innerHTML = `<div class="kpi"><div class="label">Apply rate</div><div class="value">${pct(ar, 1)}</div></div><div class="kpi"><div class="label">Qualified applicants</div><div class="value">${fmtN(q)}</div><div class="note">${pct(qr)} of applicants</div></div>`;
+  });
+  const [a, b] = AB; const p1 = a.views ? a.applies / a.views : 0, p2 = b.views ? b.applies / b.views : 0;
+  const pool = (a.applies + b.applies) / Math.max(a.views + b.views, 1);
+  const se = Math.sqrt(pool * (1 - pool) * (1 / Math.max(a.views, 1) + 1 / Math.max(b.views, 1)));
+  const z = se ? (p2 - p1) / se : 0, p = 2 * (1 - normCdf(Math.abs(z))), conf = 1 - p;
+  const winner = p2 >= p1 ? b : a, loser = winner === b ? a : b, lift = (Math.max(p1, p2) / Math.max(Math.min(p1, p2), 1e-9)) - 1;
+  const need = Math.abs(p2 - p1) > 1e-6 ? Math.ceil(Math.pow(1.96 + 0.84, 2) * (p1 * (1 - p1) + p2 * (1 - p2)) / Math.pow(p2 - p1, 2)) : Infinity;
+  const el = $("#ab-verdict");
+  if (p < 0.05) {
+    el.innerHTML = `<div class="verdict win"><span class="eyebrow">Result</span><div class="big">Version ${winner.key} wins: ${pct(lift)} more applicants per view</div><div>${pct(conf, 1)} confidence this is a real difference, not chance. Recommendation: send all traffic to version ${winner.key} and retire version ${loser.key}.</div></div>`;
+  } else {
+    const more = isFinite(need) ? Math.max(0, need - Math.min(a.views, b.views)) : null;
+    el.innerHTML = `<div class="verdict wait"><span class="eyebrow">Result</span><div class="big">Too early to call</div><div>Version ${winner.key} is ahead by ${pct(lift)}, at ${pct(conf, 0)} confidence. ${more != null ? `About ${fmtN(more)} more views per version would settle it.` : "The two versions are performing the same."} Keep both running.</div></div>`;
+  }
+}
+
+// ---------- ROI ----------
+function renderROI() {
+  const rows = RECORDS.filter(r => MONTHS[r.m].mature); const s = sum(rows);
+  const agency = Math.max(0, +$("#r-agency").value || 0);
+  const cprh = s.spend / Math.max(s.ret365, 0.01);
+  $("#r-kpis").innerHTML = [
+    ["Ad spend", fmtUSD(s.spend), "May–Oct 2025"],
+    ["Hires", fmtN(s.hires), "from job ads"],
+    ["Still employed at 365 days", fmtN(s.ret365), pct(s.ret365 / s.hires) + " of hires"],
+    ["Cost per retained hire", fmtUSD(cprh), "ad spend ÷ retained hires"],
+  ].map(([l, v, nt]) => `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div><div class="note">${nt}</div></div>`).join("");
+  const steps = [
+    ["Clicks", "people who opened the ad", s.clicks],
+    ["Applicants", "submitted an application", s.applies],
+    ["Qualified", "met license and experience bar", s.qualified],
+    ["Interviewed", "", s.interviews],
+    ["Hired", "", s.hires],
+    ["Stayed 90 days", "", s.ret90],
+    ["Stayed 365 days", "the number finance cares about", s.ret365],
+  ];
+  $("#r-funnel").innerHTML = `<div class="fstep fhead"><div>Stage</div><div class="barcell">Share of previous stage</div><div>Count</div><div>Cost each</div></div>` +
+    steps.map(([n, sm, v], i) => { const prev = i ? steps[i - 1][2] : v, conv = v / prev; return `<div class="fstep"><div class="name">${n}${sm ? `<small>${sm}</small>` : ""}</div><div class="barcell" data-tip="${i ? `${pct(conv, 1)} of ${steps[i - 1][0].toLowerCase()}` : "Starting point"}"><div class="hbar" style="grid-template-columns:minmax(0,1fr) 52px;gap:8px"><div class="track"><div class="fill" style="width:${(i ? conv : 1) * 100}%"></div></div><div class="v" style="font-size:12px;color:var(--muted)">${i ? pct(conv, 1) : "100%"}</div></div></div><div class="count">${fmtN(v)}</div><div class="cost">${fmtUSD(s.spend / Math.max(v, 0.01))}</div></div>`; }).join("");
+  const br = BOARDS.map(b => { const x = sum(rows.filter(r => r.board === b.id)); return { b, v: x.spend / Math.max(x.ret365, 0.01) }; }).sort((a, z) => a.v - z.v);
+  const mx = Math.max(...br.map(x => x.v));
+  $("#r-boards").innerHTML = br.map(({ b, v }) => `<div class="hbar" data-tip="${b.name}: <b>${fmtUSD(v)}</b> per hire still employed after a year"><span>${b.name}</span><div class="track"><div class="fill" style="width:${(v / mx * 100).toFixed(1)}%"></div></div><span class="v">${fmtUSD(v)}</span></div>`).join("");
+  const savedEach = agency - cprh;
+  $("#r-agency-out").innerHTML = savedEach > 0
+    ? `Each retained hire from job ads cost <b>${fmtUSD(cprh)}</b> versus <b>${fmtUSD(agency)}</b> through an agency. Across ${fmtN(s.ret365)} retained hires, that is about <b>${fmtUSD(savedEach * s.ret365)}</b> saved in six months.`
+    : `At this agency cost, job ads cost <b>${fmtUSD(-savedEach)}</b> more per retained hire. Shift budget toward the boards at the top of the list on the left.`;
+}
+$("#r-agency").addEventListener("input", renderROI);
+
+// ---------- routing ----------
+const VIEWS = ["ads", "dashboard", "abtest", "roi"];
+function show() {
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "ads";
+  VIEWS.forEach(x => { $("#view-" + x).hidden = x !== v; $("#tab-" + x).setAttribute("aria-selected", String(x === v)); });
+  tip.hidden = true;
+}
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => { location.hash = t.dataset.view; }));
+addEventListener("hashchange", show);
+
+syncPostBtn(); renderDashboard(); renderABInputs(); renderAB(); renderROI(); show();
+const LS_KEY = "caretalent-demo-v1";
+(function initStandalone() {
+  try { const saved = JSON.parse(localStorage.getItem(LS_KEY) || "null"); if (Array.isArray(saved) && saved.length) campaigns = saved; } catch (e) {}
+  goLocal("");
+  const pill = $("#mode-pill"); pill.className = "pill live"; pill.textContent = "Demo · saved in this browser";
+  $("#mode-banner").hidden = true;
+})();
+$("#reset-demo").addEventListener("click", () => { try { localStorage.removeItem(LS_KEY); } catch (e) {} campaigns = []; mode = "loading"; seenFeed = new Set(); firstFeedRender = true; goLocal(""); const pill = $("#mode-pill"); pill.className = "pill live"; pill.textContent = "Demo · saved in this browser"; $("#mode-banner").hidden = true; });
+</script>
+
+</body>
+</html>
