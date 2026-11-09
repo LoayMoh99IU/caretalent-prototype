@@ -22,6 +22,8 @@ export type Job = {
   days_live: number;
   rebalanced: boolean;
   is_sample: boolean;
+  goal: "applicants" | "qualified";
+  baseline_weekly: number;
   created_at: string;
 };
 
@@ -41,7 +43,7 @@ export type Activity = {
   job_id: string;
   board_id: string | null;
   day: number;
-  kind: "posted" | "applicants" | "hire" | "rebalanced";
+  kind: "posted" | "applicants" | "hire" | "rebalanced" | "quick_apply";
   message: string;
   created_at: string;
 };

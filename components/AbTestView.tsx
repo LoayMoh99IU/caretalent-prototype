@@ -29,6 +29,7 @@ export default function AbTestView({ ab }: { ab: AbVariant[] }) {
     <section>
       <div className="view-head">
         <div className="rule" />
+        <span className="eyebrow">Priority 1 · better ads bring more applicants</span>
         <h1>Which version of the post works better?</h1>
         <p className="sub">Two versions of the same ICU RN job ran side by side on the same boards. Edit the counts to see how the answer changes.</p>
       </div>

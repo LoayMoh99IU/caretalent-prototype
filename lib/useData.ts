@@ -43,7 +43,7 @@ export function useCareTalentData() {
     if (err) throw err;
     setState((s) => ({
       ...s,
-      jobs: (jobs.data as Job[]).map((j) => num(j, ["monthly_budget", "days_live"])),
+      jobs: (jobs.data as Job[]).map((j) => num(j, ["monthly_budget", "days_live", "baseline_weekly"])),
       totals: (totals.data as PostingTotal[]).map((t) =>
         num(t, ["budget_share", "spend", "clicks", "applicants", "qualified", "hires"])
       ),

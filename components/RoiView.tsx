@@ -34,6 +34,7 @@ export default function RoiView({ boards, monthly }: { boards: Board[]; monthly:
     <section>
       <div className="view-head">
         <div className="rule" />
+        <span className="eyebrow">Phase 2 · after the pilot has hire data</span>
         <h1>What each job-ad dollar bought</h1>
         <p className="sub">For finance: every stage from the first click to a hire who stayed a full year. Uses hire cohorts from May to October 2025, the newest ones with complete 365-day results.</p>
       </div>

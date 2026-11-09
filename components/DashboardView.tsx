@@ -46,6 +46,7 @@ export default function DashboardView({ boards, roles, monthly }: Props) {
     <section>
       <div className="view-head">
         <div className="rule" />
+        <span className="eyebrow">Priority 2</span>
         <h1>Hiring dashboard</h1>
         <p className="sub">What you spent, who applied, who you hired, and who is still with you a year later.</p>
       </div>

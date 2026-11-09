@@ -164,3 +164,21 @@ footer { color: var(--faint); font-size: 12px; padding-block: 0 32px; }
 .btn-link { appearance: none; background: none; border: 0; color: var(--primary); font: 600 13px var(--f-sans); cursor: pointer; padding: 0; }
 .error { color: var(--bad); font-size: 13px; margin: 0; }
 .skeleton { color: var(--faint); font-size: 14px; padding: 8px 0; }
+
+/* candidate quick apply */
+.cand-grid { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 900px) { .cand-grid { grid-template-columns: minmax(0, 1fr); } }
+.phone { background: var(--card); border: 1px solid var(--border); border-radius: 36px; padding: 18px 18px 22px; box-shadow: 0 12px 32px rgba(14, 18, 37, 0.08); display: grid; gap: 14px; min-width: 0; }
+.phone-bar { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 16px; padding: 2px 4px 10px; border-bottom: 1px solid var(--border); }
+.seg { display: flex; gap: 6px; }
+.seg button { flex: 1; appearance: none; border: 1px solid var(--input); background: var(--card); color: var(--fg); font: 500 14px var(--f-sans); padding: 8px 6px; border-radius: 999px; cursor: pointer; }
+.seg button.on { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+.voice { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; align-items: center; background: var(--accent); color: var(--accent-fg); border-radius: var(--radius); padding: 12px; font-size: 13px; }
+.voice .meta { color: var(--accent-fg); opacity: .8; font-size: 12px; margin-top: 2px; }
+.mic { width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--teal); color: #fff; font: 600 12px var(--f-sans); cursor: pointer; }
+.mic.rec { background: var(--bad); }
+@media (prefers-reduced-motion: no-preference) { .mic.rec { animation: pulse 1.2s ease-in-out infinite; } }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(184, 50, 42, 0.18); } }
+.sugg { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; font-size: 14px; }
+.sugg .meta { color: var(--faint); font-size: 12px; }
+.tab .later { font-size: 11px; font-weight: 600; color: var(--faint); margin-left: 4px; }

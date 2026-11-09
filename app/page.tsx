@@ -5,13 +5,15 @@ import AdsView from "@/components/AdsView";
 import DashboardView from "@/components/DashboardView";
 import AbTestView from "@/components/AbTestView";
 import RoiView from "@/components/RoiView";
+import CandidateView from "@/components/CandidateView";
 import Tooltip from "@/components/Tooltip";
 import { useCareTalentData } from "@/lib/useData";
 
 const VIEWS = [
-  { id: "ads", label: "Smart job ads" },
+  { id: "ads", label: "More applicants" },
+  { id: "apply", label: "Candidate quick apply" },
+  { id: "abtest", label: "Ad A/B test" },
   { id: "dashboard", label: "Hiring dashboard" },
-  { id: "abtest", label: "A/B test" },
   { id: "roi", label: "Ad spend ROI" },
 ] as const;
 type ViewId = (typeof VIEWS)[number]["id"];
@@ -52,7 +54,7 @@ export default function Home() {
           <nav className="tabs" role="tablist" aria-label="Sections">
             {VIEWS.map((v) => (
               <button key={v.id} className="tab" role="tab" aria-selected={view === v.id}
-                onClick={() => { window.location.hash = v.id; }}>{v.label}</button>
+                onClick={() => { window.location.hash = v.id; }}>{v.label}{v.id === "roi" ? <span className="later">later</span> : null}</button>
             ))}
           </nav>
         </div>
@@ -63,6 +65,7 @@ export default function Home() {
         {data.loading ? <p className="skeleton">Loading…</p> : (
           <>
             {view === "ads" && <AdsView boards={data.boards} roles={data.roles} jobs={data.jobs} totals={data.totals} activity={data.activity} refresh={data.refresh} />}
+            {view === "apply" && <CandidateView boards={data.boards} roles={data.roles} jobs={data.jobs} refresh={data.refresh} />}
             {view === "dashboard" && <DashboardView boards={data.boards} roles={data.roles} monthly={data.monthly} />}
             {view === "abtest" && <AbTestView ab={data.ab} />}
             {view === "roi" && <RoiView boards={data.boards} monthly={data.monthly} />}
@@ -70,7 +73,7 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="wrap">Prototype for CareTalent AI with sample data, built on Next.js and Supabase. Prepared by Loay Mahmoud.</footer>
+      <footer className="wrap">Prototype for CareTalent AI with sample data. Channel results are simulated; in the product they come from the programmatic partner (such as Joveo) and the employer&apos;s applicant tracking system. Prepared by Loay Mahmoud.</footer>
       <Tooltip />
     </>
   );
