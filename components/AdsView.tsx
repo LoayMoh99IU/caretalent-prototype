@@ -42,7 +42,7 @@ export default function AdsView({ boards, roles, jobs, totals, activity, refresh
   const [loc, setLoc] = useState("Indianapolis, IN");
   const [budget, setBudget] = useState(6000);
   const [goal, setGoal] = useState<Goal>("applicants");
-  const [baseline, setBaseline] = useState(5);
+  const [baseline, setBaseline] = useState(20);
   const [picked, setPicked] = useState<string[] | null>(null);
   const selected = picked ?? boards.map((b) => b.id);
   const [posting, setPosting] = useState(false);

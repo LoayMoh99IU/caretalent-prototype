@@ -169,9 +169,9 @@ begin
   );
 end $$;
 
-update public.jobs set baseline_weekly = 6 where title like 'ICU RN%' and is_sample;
-update public.jobs set baseline_weekly = 3 where title like 'CRNA%' and is_sample;
-update public.jobs set baseline_weekly = 8 where title like 'Med/Surg%';
+update public.jobs set baseline_weekly = 32 where title like 'ICU RN%' and is_sample;
+update public.jobs set baseline_weekly = 26 where title like 'CRNA%' and is_sample;
+update public.jobs set baseline_weekly = 22 where title like 'Med/Surg%';
 
 revoke all on function public.post_job(text, text, text, numeric, text[], text, int) from public;
 revoke all on function public.rebalance_job(uuid) from public;
